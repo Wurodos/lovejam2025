@@ -3,6 +3,7 @@ local tt = {}
 local all_font = {}
 
 function tt.init()
+    all_font.massive = love.graphics.newFont("text/mainfont.ttf", 64)
     all_font.big = love.graphics.newFont("text/mainfont.ttf", 32)
     all_font.readable = love.graphics.newFont("text/mainfont.ttf", 24)
     all_font.medium = love.graphics.newFont("text/mainfont.ttf", 16)

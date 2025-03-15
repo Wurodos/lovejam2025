@@ -5,6 +5,9 @@ local Tile = require "map.tile"
 local tiles = {}
 local available_spots = {}
 
+local canvas = love.graphics.newCanvas(3600, 3600)
+local colorData
+
 function Map.init()
     --for _, tile in ipairs(TESTMAP) do
     --    Map.addTile(tile)
@@ -18,7 +21,167 @@ function Map.addTile(tile)
 
     tile.x = tile.col*Tile.size
     tile.y = tile.row*Tile.size
+
+    love.graphics.setCanvas(canvas)
+    love.graphics.clear()
+    love.graphics.push()
+    love.graphics.translate(canvas:getWidth()*0.5, canvas:getHeight()*0.5)
+    for _, tilerow in pairs(tiles) do
+        for _, tile in pairs(tilerow) do
+            tile:draw()
+        end
+    end
+    love.graphics.pop()
+    love.graphics.setCanvas()
+    
 end
+
+function Map.getColorData()
+    if colorData == nil then
+        colorData = canvas:newImageData()
+    end
+    return colorData
+end
+
+
+local NEGINF = -1e9
+local visited = {}
+--recursive
+local function findmore(thing, camefrom, row, col)
+    if tiles[row] == nil or tiles[row][col] == nil then return NEGINF end
+    
+    if thing == 'R' then
+        local total = 1
+
+        -- for cycles
+        if camefrom > 0 and visited[tiles[row][col]] ~= nil then return 0 end
+        visited[tiles[row][col]] = true
+
+        if camefrom > 0 and tiles[row][col].village then return total end
+        if tiles[row][col].village then total = 0 end
+        
+        
+
+        if camefrom ~= 3 and tiles[row][col].things[3] == 'R' then
+            local sum = findmore('R', 1, row+1, col) 
+            if tiles[row][col].village then
+                if sum > 0 then
+                    total = total + sum + 1 end
+            else total = total + sum end
+        end
+        if camefrom ~= 4 and tiles[row][col].things[4] == 'R' then
+            local sum = findmore('R', 2, row, col-1)
+            if tiles[row][col].village then
+                if sum > 0 then
+                    total = total + sum + 1 end
+            else total = total + sum end
+        end
+        if camefrom ~= 1 and tiles[row][col].things[1] == 'R' then
+            local sum = findmore('R', 3, row-1, col)
+            if tiles[row][col].village then
+                if sum > 0 then
+                    total = total + sum + 1 end
+            else total = total + sum end
+        end
+        if camefrom ~= 2 and tiles[row][col].things[2] == 'R' then
+            local sum = findmore('R', 4, row, col+1) 
+            if tiles[row][col].village then
+                if sum > 0 then
+                    total = total + sum + 1 end
+            else total = total + sum end
+        end
+
+        return total
+    elseif thing == 'C' then
+        local total = 2
+        local terminated = false
+
+        -- for cycles
+        if camefrom > 0 and visited[tiles[row][col]] ~= nil then return 0 end
+        visited[tiles[row][col]] = true
+
+        for _, value in ipairs(tiles[row][col].city) do
+            if value == 2 then terminated = true break end
+        end
+        if camefrom > 0 and terminated then return total end
+        if terminated then total = 0 end
+
+        if camefrom ~= 3 and tiles[row][col].things[3] == 'C' then
+            local sum = findmore('C', 1, row+1, col)
+            if terminated then
+                if sum > 0 then
+                    total = total + sum + 2 end
+            else total = total + sum end
+        end
+        if camefrom ~= 4 and tiles[row][col].things[4] == 'C' then
+            local sum = findmore('C', 2, row, col-1)
+            if terminated then
+                if sum > 0 then
+                    total = total + sum + 2 end
+            else total = total + sum end
+        end
+        if camefrom ~= 1 and tiles[row][col].things[1] == 'C' then
+            local sum = findmore('C', 3, row-1, col)
+            if terminated then
+                if sum > 0 then
+                    total = total + sum + 2 end
+            else total = total + sum end
+        end
+        if camefrom ~= 2 and tiles[row][col].things[2] == 'C' then
+            local sum = findmore('C', 4, row, col+1) 
+            if terminated then
+                if sum > 0 then
+                    total = total + sum + 2 end
+            else total = total + sum end
+        end
+
+        if tiles[row][col].shield then total = total + 2 end
+
+        return total
+    end
+end
+
+local function monasterycheck(row, col)
+    for i = -1, 1, 1 do
+        for j = -1, 1, 1 do
+            if tiles[row+i] == nil or tiles[row+i][col+j] == nil then
+                return 0
+            end
+        end
+    end
+    return 9
+end
+
+function Map.score(tile)
+    local total = 0
+    visited = {}
+    visited[tile] = true
+
+    local road = findmore('R', -1, tile.row, tile.col)
+    if road > 1 then total = total + road end
+
+    visited = {}
+    visited[tile] = true
+    
+    local castle = findmore('C', -1, tile.row, tile.col)
+    if castle > 2 then total = total + castle end
+
+
+    for i = -1, 1, 1 do
+        for j = -1, 1, 1 do
+            if tiles[tile.row + i] and tiles[tile.row + i][tile.col + j]
+                and tiles[tile.row + i][tile.col + j].monastery then
+                total = total + monasterycheck(tile.row+i, tile.col+j)
+            end
+        end
+    end
+
+    return total
+end
+
+
+
+
 
 function Map.pushAvailable(x,y,r,c)
     available_spots[#available_spots+1] = {x=x,y=y,row=r,col=c}
@@ -112,10 +275,10 @@ function Map.mousereleased()
     available_spots = {}
 end
 
-function Map.getIntersected(tile)
+function Map.getIntersected(tile, camera_x, camera_y)
     for i, spot in ipairs(available_spots) do
-        if IsInsideRect(tile.x+Tile.size*0.5,tile.y+Tile.size*0.5,spot.x,spot.y,Tile.size,Tile.size) then
-            for j = 1, rotations_needed[i], 1 do
+        if IsInsideRect(tile.x+Tile.size*0.5-camera_x,tile.y+Tile.size*0.5-camera_y,spot.x,spot.y,Tile.size,Tile.size) then
+            for _ = 1, rotations_needed[i], 1 do
                 tile:rotate()
             end
             return spot
@@ -125,11 +288,7 @@ function Map.getIntersected(tile)
 end
 
 function Map.draw()
-    for _, tilerow in pairs(tiles) do
-        for _, tile in pairs(tilerow) do
-            tile:draw()
-        end
-    end
+    love.graphics.draw(canvas, -canvas:getWidth()*0.5, -canvas:getHeight()*0.5)
 
     love.graphics.setColor(0,0.5,0)
     for _, spot in ipairs(available_spots) do

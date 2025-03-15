@@ -27,7 +27,8 @@ local corner = {
     {x=0,y=0},
     {x=size,y=0},
     {x=size,y=size},
-    {x=0,y=size}
+    {x=0,y=size},
+    {x=0,y=0},
 }
 
 local center = {x=size*0.5, y=size*0.5}
@@ -114,28 +115,33 @@ function Tile:decode()
     -- city vertices
     -- basically there's 5 types:
     -- singular = needs code below
-    -- triangle = covered
+    -- triangle = fucking bugged too HOWWWW
     -- pipe = needs code below
-    -- pacman = covered
+    -- pacman = there's a bug when rotating, so not covered
     -- full = covered
     for i, city in ipairs(self.city_vertices) do
-        local city_size, side = 0, 0
+        local city_size, side, empty_side = 0, 0, 0
         local is_pipe = false
 
         for j, city_id in ipairs(self.city) do
+            
             if city_id == i then
                 city_size = city_size + 1
                 if side > 0 and j - side == 2 then
                     is_pipe = true
                 end
                 side = j
-            end
+            else empty_side = j end
         end
         if city_size == 1 then
             city[5] = off_cardinal[side].x
             city[6] = off_cardinal[side].y
         elseif city_size == 2 and is_pipe then
             city.is_pipe = side
+        elseif city_size == 3 then
+            print(self.encoding)
+            print(empty_side)
+            city.is_pacman = empty_side
         end
     end
     
@@ -152,11 +158,13 @@ function Tile:decode()
 end
 
 function Tile:rotate(isClockwise)
+    print("Before rotation: "..self.encoding)
+
     if isClockwise then
         local id
         for i = #self.encoding, 1, -1 do
             local c = self.encoding:sub(i,i)
-            if c == 'R' or c == 'S' or c == 'C' or c == 'F' then
+            if c == 'R' or c == 'C' or c == 'F' then
                 id = i
                 break
             end
@@ -166,7 +174,7 @@ function Tile:rotate(isClockwise)
         local id = -1
         for i = 1, #self.encoding do
             local c = self.encoding:sub(i,i)
-            if c == 'R' or c == 'S' or c == 'C' or c == 'F' then
+            if c == 'R' or c == 'C' or c == 'F' then
                 if id == -1 then id = 0 
                 else
                     id = i
@@ -176,12 +184,20 @@ function Tile:rotate(isClockwise)
         end
         self.encoding = self.encoding:sub(id)..self.encoding:sub(1,id-1)
     end
+
+    if self.encoding:sub(#self.encoding, #self.encoding) == 'S' then
+        self.encoding = 'S'..self.encoding:sub(1,#self.encoding-1)
+    end
+
+    print("After rotation: "..self.encoding)
+
     self:decode()
     return self
 end
 
 
 function Tile:draw()
+    love.graphics.push()
     if self.col then
         love.graphics.translate(self.col*size,self.row*size)
     else 
@@ -209,9 +225,9 @@ function Tile:draw()
     love.graphics.setColor(0.7,0.5,0.3)
     for _, city in ipairs(self.city_vertices) do
         if #city > 2 then
-            if not city.is_pipe then
+            if not city.is_pipe and not city.is_pacman then
                 love.graphics.polygon("fill", city)
-            else
+            elseif city.is_pacman == nil then
                 if city.is_pipe == 3 then
                     love.graphics.polygon("fill", corner[1].x, corner[1].y, corner[2].x, corner[2].y,
                         off_cardinal[2].x, off_cardinal[2].y, off_cardinal[4].x, off_cardinal[4].y)
@@ -222,6 +238,13 @@ function Tile:draw()
                         off_cardinal[3].x, off_cardinal[3].y, off_cardinal[1].x, off_cardinal[1].y)
                     love.graphics.polygon("fill", corner[3].x, corner[3].y, corner[2].x, corner[2].y,
                         off_cardinal[1].x, off_cardinal[1].y, off_cardinal[3].x, off_cardinal[3].y)
+                end
+            else
+                for i = 1, 4, 1 do
+                    if i ~= city.is_pacman then  
+                    love.graphics.polygon("fill", corner[i].x, corner[i].y, corner[i+1].x, corner[i+1].y,
+                        center.x, center.y)
+                    end
                 end
             end
         end
@@ -238,7 +261,7 @@ function Tile:draw()
     --love.graphics.polygon("fill", 0,0,200,0,200,200,150,100,100,50)
 
 
-    love.graphics.origin()
+    love.graphics.pop()
     
 end
 

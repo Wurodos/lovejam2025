@@ -23,6 +23,8 @@ function CheckCollision(x1,y1,w1,h1, x2,y2,w2,h2)
            y2 < y1+h1
 end
 
+local test_tile
+
 function love.load()
     TT.init()
     math.randomseed(os.time())
@@ -52,6 +54,8 @@ function love.load()
        Tile("C1C1FC1", 5,3),
     }
 
+    --test_tile = Tile("C1C1SC1R", 5, 5)
+
     Gamestate.registerEvents()
     Gamestate.switch(Game)
 end
@@ -60,6 +64,7 @@ function love.update(dt)
 end
 
 function love.draw()
+    --test_tile:draw()
     --for _, tile in ipairs(TESTMAP) do
     --    tile:draw()
     --end
