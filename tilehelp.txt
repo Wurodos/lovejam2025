@@ -1,0 +1,8 @@
+They are encoded based on sides (clockwise from the top)
+R road
+C# city 
+F field
+
+M monastery
+S shield
+V village
