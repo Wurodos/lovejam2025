@@ -15,7 +15,7 @@ end
 
 function Menu:update(dt)
     example_tiles = {
-        Tile("FC1FF", 2, 3), Tile("FSC1FC1", 2, 4), Tile("FFFC1", 2, 5)
+        Tile("FC1FF", 1, 1), Tile("FSC1FC1", 1, 2), Tile("FFFC1", 1, 3)
     }
 end
 
@@ -29,6 +29,7 @@ function Menu:draw()
     love.graphics.rectangle("line", rx,ry,rw,rh)
     TT.setFont("massive")
     TT.draw("Play", 400, 550, {limit=400})
+
 
     TT.setFont("big")
     TT.draw("2", 200, 200, {limit=300})
