@@ -24,8 +24,35 @@ end
 
 local hand = {}
 
+local tiledata = {
+"2FFRFM",
+"4FFFFM",
+"1C1C1C1C1",
+"4C1RFR",
+"5C1FFF",
+"2FSC1FC1",
+"1FC1FC1",
+"3FC1FC2",
+"2C1C2FF",
+"3C1RRF",
+"3C1FRR",
+"3C1RRRV",
+"2C1SC1RR",
+"3C1C1FF",
+"2SC1RRC1",
+"3C1RRC1",
+"1C1SC1FC1",
+"3C1C1FC1",
+"2C1SC1RC1",
+"1C1C1RC1",
+"8RFRF",
+"9FFRR",
+"4FRRRV",
+"1RRRRV",
+}
+
 function Game:init()
-    for line in io.lines("map/tiledata.txt") do
+    for __, line in ipairs(tiledata) do
         local dupes = tonumber(line:sub(1,1))
         for _ = 1, dupes, 1 do
             tiledeck[#tiledeck+1] = Tile(line:sub(2))
