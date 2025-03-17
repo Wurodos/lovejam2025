@@ -23,6 +23,20 @@ function CheckCollision(x1,y1,w1,h1, x2,y2,w2,h2)
            y2 < y1+h1
 end
 
+function FilterInplace(arr, func)
+    local new_index = 1
+    local size_orig = #arr
+    local was_filtered = false
+    for old_index, v in ipairs(arr) do
+        if func(v, old_index) then
+            arr[new_index] = v
+            new_index = new_index + 1
+        else was_filtered = true end
+    end
+    for i = new_index, size_orig do arr[i] = nil end
+    return was_filtered
+end
+
 local test_tile
 
 function love.load()
@@ -57,7 +71,7 @@ function love.load()
     --test_tile = Tile("C1C1SC1R", 5, 5)
 
     Gamestate.registerEvents()
-    Gamestate.switch(Game)
+    Gamestate.switch(Menu)
 end
 
 function love.update(dt)

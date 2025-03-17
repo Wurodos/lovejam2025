@@ -39,10 +39,15 @@ local center = {x=size*0.5, y=size*0.5}
 local Tile = Class{
     init = function (self, encoding, row, col)
         self.encoding = encoding
+        self.destroyed = false
+
+        self.besieging = {}
+        self.hp = 250
 
         self.shield = false
         self.village = false
         self.monastery = false
+        self.has_road = false
 
         self.row = row
         self.col = col
@@ -54,6 +59,7 @@ local Tile = Class{
 
         self:decode()
     end,
+    basehp = 250,
     size = size,
     monastery_img = love.graphics.newImage("map/monastery.png"),
     shield_img = love.graphics.newImage("map/shield.png"),
@@ -65,7 +71,9 @@ local Tile = Class{
 function Tile:decode()
     self.road = {0,0,0,0}
     self.city = {0,0,0,0}
+    self.castle = false
     self.things = {'F','F','F','F'}
+    self.hp = Tile.basehp
 
     -- array of arrays of vertices
     self.city_vertices = {{},{}}
@@ -77,12 +85,15 @@ function Tile:decode()
         if c == 'M' then
             self.monastery = true
         elseif c == 'R' then
+            self.has_road = true
             self.things[id] = 'R'
             self.road[id] = 1
             id = id + 1
         
 
         elseif c == 'C' then
+            self.hp = self.hp + 100
+            self.castle = true
             local city_id = tonumber(self.encoding:sub(i+1,i+1))
             self.things[id] = 'C'
             self.city[id] = city_id

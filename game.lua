@@ -32,7 +32,7 @@ function Game:init()
         end
     end
     shuffleInPlace(tiledeck)
-    --tiledeck = {tiledeck[1], tiledeck[2]}
+    --tiledeck = {tiledeck[1], tiledeck[2], tiledeck[3], tiledeck[4], tiledeck[5], tiledeck[6]}
     Map.init()
     Game.newhand()
 end

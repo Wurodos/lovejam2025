@@ -1,8 +1,10 @@
 local Map = {}
 local Tile = require "map.tile"
-
+Map.tilesize = Tile.size
 
 local tiles = {}
+
+local tileset = {}
 local available_spots = {}
 
 local canvas = love.graphics.newCanvas(3600, 3600)
@@ -18,9 +20,11 @@ end
 function Map.addTile(tile)
     if tiles[tile.row] == nil then tiles[tile.row] = {} end
     tiles[tile.row][tile.col] = tile
+    tileset[#tileset+1] = tile
 
     tile.x = tile.col*Tile.size
     tile.y = tile.row*Tile.size
+    print(tile.row, tile.col)
 
     love.graphics.setCanvas(canvas)
     love.graphics.clear()
@@ -36,11 +40,51 @@ function Map.addTile(tile)
     
 end
 
+function Map.getShields()
+    local shields = {}
+
+    for _, tilerow in pairs(tiles) do
+        for _, tile in pairs(tilerow) do
+            if tile.shield then shields[#shields+1] = tile end
+        end
+    end
+
+    print(#shields)
+    return shields
+end
+
+function Map.getMonasteries()
+    local monasteries = {}
+
+    for _, tilerow in pairs(tiles) do
+        for _, tile in pairs(tilerow) do
+            if tile.monastery then monasteries[#monasteries+1] = tile end
+        end
+    end
+
+    print(#monasteries)
+    return monasteries
+end
+
 function Map.getColorData()
     if colorData == nil then
         colorData = canvas:newImageData()
     end
     return colorData
+end
+
+function Map.getRandomTile()
+    return tileset[math.random(1, #tileset)]
+end
+
+function Map.anyTileLeft()
+    return #tileset > 0
+end
+
+function Map.getTileAt(x, y)
+    local col, row = math.floor(x/Tile.size), math.floor(y/Tile.size)
+    if tiles[row] == nil then return nil end
+    return tiles[row][col]
 end
 
 
@@ -271,6 +315,19 @@ function Map.getNeighbors(row, col)
     return adjs
 end
 
+function Map.getNeighborsCircle(row, col)
+    local adjs = Map.getNeighbors(row, col)
+    if tiles[row+1] then
+        adjs[#adjs+1] = tiles[row+1][col+1]
+        adjs[#adjs+1] = tiles[row+1][col-1]  
+    end
+    if tiles[row-1] then
+        adjs[#adjs+1] = tiles[row-1][col+1]
+        adjs[#adjs+1] = tiles[row-1][col-1]
+    end
+    return adjs
+end
+
 function Map.mousereleased()
     available_spots = {}
 end
@@ -286,6 +343,69 @@ function Map.getIntersected(tile, camera_x, camera_y)
     end
     return nil
 end
+
+
+local sincelast = 0
+local delay = 0.1
+
+function Map.destroytile(tile)
+    tile.destroyed = true
+    tiles[tile.row][tile.col] = nil
+    for i, value in ipairs(tileset) do
+        if value.row == tile.row and value.col == tile.col then
+            table.remove(tileset, i)
+            break
+        end
+    end
+end
+
+function Map.update(dt)
+    sincelast = sincelast + dt
+    if sincelast < delay then return end
+    sincelast = sincelast - delay
+
+    -- sieges
+    for _, tile in ipairs(tileset) do
+        if not tile.destroyed and #tile.besieging > 0 then
+            love.graphics.setCanvas(canvas)
+            love.graphics.push()
+            love.graphics.translate(canvas:getWidth()*0.5, canvas:getHeight()*0.5)
+            love.graphics.setColor(0,0,0)
+            for i = 1, #tile.besieging, 1 do
+                if tile.besieging[i].alive then
+                tile.hp = tile.hp - 1
+                love.graphics.circle("fill", math.random(tile.x, tile.x+Tile.size),
+                    math.random(tile.y, tile.y+Tile.size),3)
+                end
+            end
+
+            if tile.hp < 0 then
+                Map.destroytile(tile)
+                love.graphics.rectangle("fill", tile.x, tile.y, Tile.size, Tile.size)
+            end
+
+            love.graphics.setColor(1,1,1)
+            love.graphics.pop()
+            love.graphics.setCanvas()
+
+            
+        end
+    end
+
+    -- unsieged monasteries heal
+
+    
+end
+
+function Map.unsiege(tile)
+    love.graphics.setCanvas(canvas)
+    love.graphics.push()
+    love.graphics.translate(canvas:getWidth()*0.5, canvas:getHeight()*0.5)
+    tile:draw()
+    love.graphics.pop()
+    love.graphics.setCanvas()
+end
+
 
 function Map.draw()
     love.graphics.draw(canvas, -canvas:getWidth()*0.5, -canvas:getHeight()*0.5)
