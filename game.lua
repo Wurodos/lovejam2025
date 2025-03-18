@@ -51,7 +51,16 @@ local tiledata = {
 "1RRRRV",
 }
 
+local music
+local tile_sfx
+
 function Game:init()
+
+    music = love.audio.newSource("music/Vibing Over Venus.mp3", "stream")
+    tile_sfx = love.audio.newSource("sfx/placingtile.wav", "static")
+
+    music:play()
+
     for __, line in ipairs(tiledata) do
         local dupes = tonumber(line:sub(1,1))
         for _ = 1, dupes, 1 do
@@ -67,6 +76,7 @@ end
 function Game.newhand()
     hand[1] = Game.drawtile()
     if hand[1] == nil then
+        music:stop()
         Endgame.setscore(score)
         Gamestate.switch(Endgame)
         return
@@ -99,6 +109,7 @@ function Game:mousereleased()
             are_dragging_tile = false
 
             if picked_spot ~= nil then
+                tile_sfx:play()
                 tile.row = picked_spot.row
                 tile.col = picked_spot.col
                 Map.addTile(tile)
@@ -119,6 +130,11 @@ end
 
 function Game:update(dt)
     --print("fps : "..1/dt)
+
+    if not music:isPlaying( ) then
+		love.audio.play( music )
+	end
+
 
     if love.keyboard.isDown("s") then
         camera_y = camera_y - 10

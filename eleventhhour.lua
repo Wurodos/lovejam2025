@@ -27,8 +27,11 @@ local sincerecruit = recruitdelay
 
 local offset = 500
 
+local music
+
 function Endgame.init()
     love.window.setTitle("ELEVENTH HOUR HAS COME. SURRENDER NOW")
+    music = love.audio.newSource("music/SCP-x3x.mp3", "stream")
     shields = Map.getShields()
     monasteries = Map.getMonasteries()
     Friend.setEnemyPool(enemies)
@@ -72,6 +75,9 @@ end
 
 function Endgame:update(dt)
     --print("fps : "..1/dt)
+    if not music:isPlaying( ) then
+		love.audio.play( music )
+	end
 
     sincerecruit = sincerecruit + dt
     if sincerecruit > recruitdelay then
@@ -122,6 +128,7 @@ function Endgame:update(dt)
     Map.update(dt)
     if not Map.anyTileLeft() then
         Gameover.setscore(score)
+        music:stop()
         Gamestate.switch(Gameover)
     end
 end
