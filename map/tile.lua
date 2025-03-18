@@ -40,6 +40,7 @@ local Tile = Class{
     init = function (self, encoding, row, col)
         self.encoding = encoding
         self.destroyed = false
+        self.lightopacity = 0
 
         self.besieging = {}
         self.hp = 250
@@ -270,8 +271,6 @@ function Tile:draw()
         love.graphics.draw(Tile.village_img, q_size, q_size, 0, size/2/512)
     end
     --love.graphics.polygon("fill", 0,0,200,0,200,200,150,100,100,50)
-
-
     love.graphics.pop()
     
 end

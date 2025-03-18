@@ -6,14 +6,18 @@ local tiles = {}
 
 local tileset = {}
 local available_spots = {}
+local light_tiles = {}
 
 local canvas = love.graphics.newCanvas(3600, 3600)
 local colorData
+
+local sfx_scoring
 
 function Map.init()
     --for _, tile in ipairs(TESTMAP) do
     --    Map.addTile(tile)
     --end
+    sfx_scoring = love.audio.newSource("sfx/scoring.wav", "static")
     Map.addTile(Tile("C1RFR", 3, 7))
 end
 
@@ -202,22 +206,41 @@ function Map.score(tile)
     visited[tile] = true
 
     local road = findmore('R', -1, tile.row, tile.col)
-    if road > 1 then total = total + road end
+    if road > 1 then 
+        total = total + road
+        TableConcat(light_tiles, visited)
+    end
 
     visited = {}
     visited[tile] = true
     
     local castle = findmore('C', -1, tile.row, tile.col)
-    if castle > 2 then total = total + castle end
+    if castle > 2 then 
+        total = total + castle
+        TableConcat(light_tiles, visited)
+    end
 
 
     for i = -1, 1, 1 do
         for j = -1, 1, 1 do
             if tiles[tile.row + i] and tiles[tile.row + i][tile.col + j]
                 and tiles[tile.row + i][tile.col + j].monastery then
-                total = total + monasterycheck(tile.row+i, tile.col+j)
+                local monastery = monasterycheck(tile.row+i, tile.col+j)
+                if monastery == 9 then
+                    total = total + monastery
+                    -- add adjacent
+                    for ii = -1, 1, 1 do
+                        for jj = -1, 1, 1 do
+                            light_tiles[tiles[tile.row+i+ii][tile.col+j+jj]] = true
+                        end
+                    end
+                end
             end
         end
+    end
+
+    if total > 0 then
+        sfx_scoring:play()
     end
 
     return total
@@ -356,6 +379,30 @@ function Map.destroytile(tile)
             table.remove(tileset, i)
             break
         end
+    end
+end
+
+function Map.updatelights(dt)
+    local stopdoingthis = false
+    for tile, _ in pairs(light_tiles) do
+        tile.lightopacity = tile.lightopacity + dt
+
+        love.graphics.setCanvas(canvas)
+        love.graphics.push()
+        love.graphics.translate(canvas:getWidth()*0.5, canvas:getHeight()*0.5)
+        love.graphics.setColor(1,1,1,tile.lightopacity)
+        love.graphics.rectangle("fill", tile.x, tile.y, Tile.size, Tile.size)
+        love.graphics.setColor(1,1,1,1)
+        if tile.lightopacity >= 1 then
+            stopdoingthis = true
+            tile.lightopacity = 0
+            tile:draw()
+        end
+        love.graphics.pop()
+        love.graphics.setCanvas()
+    end
+    if stopdoingthis then
+        light_tiles = {}
     end
 end
 

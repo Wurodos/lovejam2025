@@ -23,6 +23,14 @@ function CheckCollision(x1,y1,w1,h1, x2,y2,w2,h2)
            y2 < y1+h1
 end
 
+function TableConcat(t1,t2)
+    for key, value in pairs(t2) do
+        t1[key] = value
+    end
+    return t1
+end
+
+
 function FilterInplace(arr, func)
     local new_index = 1
     local size_orig = #arr

@@ -158,6 +158,8 @@ function Game:update(dt)
             break
         end
     end
+
+    Map.updatelights(dt)
 end
 
 
